@@ -1,0 +1,178 @@
+name: "Build Images"
+on:
+  workflow_dispatch:
+    inputs:
+      armbian_target:
+        type: choice
+        description: 'Build target'
+        required: false
+        options:
+        - kernel
+        - build
+        default: build
+
+      armbian_branch:
+        description: "Choose framework branch"
+        required: false
+        default: "main"
+
+      armbian_kernel_branch:
+        type: choice
+        description: 'Choose kernel branch'
+        options:
+        - legacy
+        - current
+        - edge
+        - vendor
+        default: 'edge'
+
+      armbian_release:
+        type: choice
+        description: 'Choose userspace release'
+        options:
+        - jammy
+        - bookworm
+        - sid
+        - noble
+        default: 'jammy'
+
+      armbian_board:
+        type: choice
+        description: 'Hardware platform'
+        options:
+        - orangepi5
+        - orangepi5-plus
+        - khadas-edge2
+        - nanopi-r6s
+        - rpi4b
+        - uefi-x86
+
+      armbian_ui:
+        type: choice
+        description: 'User interface'
+        options:
+        - minimal
+        - server
+        - xfce
+        - gnome
+        - kde-neon
+        - kde-plasma
+        default: 'server'
+
+      armbian_app_groups:
+        description: "Select app groups"
+        required: false
+        default: ""
+
+      armbian_extensions:
+        description: "Select extensions"
+        required: false
+        default: ""
+
+      armbian_compress:
+        description: "Compress method"
+        required: false
+        default: "sha,img,xz"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: "Build Armbian"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free Github Runner
+        uses: descriptinc/free-disk-space@main
+        with:
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
+      - name: Get Time
+        id: time
+        uses: nanzm/get-time-action@master
+        with:
+          timeZone: UTC
+          format: 'YYYYMMDD-HHmm'
+
+      - name: "Checkout Armbian build framework"
+        uses: actions/checkout@v4
+        with:
+          repository: armbian/build
+          fetch-depth: 0
+          clean: false
+          path: build
+
+      - name: "Checkout current repository"
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          clean: false
+          path: current
+
+      - name: "Copy userpatches to build folder"
+        shell: bash
+        run: |
+          rsync -av current/userpatches/. build/userpatches/
+
+      - name: "Build artifacts"
+        shell: bash
+        run: |
+
+          # userspace decode
+          if [[ "${{ inputs.armbian_ui }}" == minimal ]]; then
+            BUILD_DESKTOP="no"
+            BUILD_MINIMAL="yes"
+          elif [[ "${{ inputs.armbian_ui }}" == server ]]; then
+            BUILD_DESKTOP="no"
+            BUILD_MINIMAL="no"
+          else
+            BUILD_DESKTOP="yes"
+            BUILD_MINIMAL="no"
+            DESKTOP_ENVIRONMENT="${{ inputs.armbian_ui }}"
+            DESKTOP_APPGROUPS_SELECTED="${{ inputs.armbian_app_groups }}"
+            DESKTOP_ENVIRONMENT_CONFIG_NAME="config_base"
+          fi
+
+          # go to build folder and checkout
+          cd build
+          git checkout ${{ inputs.armbian_branch }}
+
+          # execute build command
+          ./compile.sh "${{ inputs.armbian_target }}" \
+          BOARD="${{ inputs.armbian_board }}" \
+          BRANCH="${{ inputs.armbian_kernel_branch }}" \
+          RELEASE="${{ inputs.armbian_release }}" \
+          KERNEL_CONFIGURE="no" \
+          BUILD_DESKTOP="${BUILD_DESKTOP}" \
+          BUILD_MINIMAL="${BUILD_MINIMAL}" \
+          DESKTOP_ENVIRONMENT="${DESKTOP_ENVIRONMENT}" \
+          DESKTOP_APPGROUPS_SELECTED="${DESKTOP_APPGROUPS_SELECTED}" \
+          DESKTOP_ENVIRONMENT_CONFIG_NAME="${DESKTOP_ENVIRONMENT_CONFIG_NAME}" \
+          ENABLE_EXTENSIONS="${{ inputs.armbian_extensions }}" \
+          COMPRESS_OUTPUTIMAGE="${{ inputs.armbian_compress }}" \
+          SHARE_LOG="yes" \
+          EXPERT="yes"
+
+      - uses: ncipollo/release-action@v1
+        with:
+          tag: "${{ steps.time.outputs.time }}"
+          name: "${{ inputs.armbian_board }} | ${{ inputs.armbian_ui }}"
+          artifacts: "build/output/images/*"
+          allowUpdates: true
+          removeArtifacts: false
+          replacesArtifacts: true
+          makeLatest: true
+          token: "${{ secrets.GITHUB_TOKEN }}"
+          body: |
+            Custom build for ${{ inputs.armbian_board }} with:
+
+            - Desktop: ${{ inputs.armbian_ui }}
+            - App groups: ${{ inputs.armbian_app_groups }}
+            - Extensions: ${{ inputs.armbian_extensions }}
+            - Kernel branch: ${{ inputs.armbian_kernel_branch }}
+            - Userspace release: ${{ inputs.armbian_release }}
