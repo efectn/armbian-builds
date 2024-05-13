@@ -42,7 +42,7 @@ EOF
 	do_with_retries 3 chroot_sdcard_apt_get_install glmark2-wayland glmark2-es2 glmark2-es2-wayland mesa-utils
 
 	display_alert "Upgrading oibaf packages" "${EXTENSION}" "info"
-	do_with_retries 3 chroot_sdcard_apt_get dist-upgrade
+	do_with_retries 3 chroot_sdcard_apt_get upgrade
 
 	display_alert "Installed oibaf packages" "${EXTENSION}" "info"
 }
