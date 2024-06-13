@@ -11,6 +11,11 @@ on:
         - build
         default: build
 
+      armbian_repo:
+        description: "Choose framework repository"
+        required: false
+        default: "armbian/build"
+
       armbian_branch:
         description: "Choose framework branch"
         required: false
@@ -102,7 +107,7 @@ jobs:
       - name: "Checkout Armbian build framework"
         uses: actions/checkout@v4
         with:
-          repository: armbian/build
+          repository: ${{ inputs.armbian_repo }}
           fetch-depth: 0
           clean: false
           path: build
