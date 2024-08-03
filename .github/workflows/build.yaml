@@ -49,6 +49,7 @@ on:
         - orangepi5-plus
         - khadas-edge2
         - nanopi-r6s
+        - nanopi-r6c
         - armsom-sige5
         - rpi4b
         - uefi-x86
