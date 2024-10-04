@@ -50,6 +50,7 @@ on:
         - khadas-edge2
         - nanopi-r6s
         - nanopi-r6c
+        - nanopi-m6
         - armsom-sige5
         - rpi4b
         - uefi-x86
