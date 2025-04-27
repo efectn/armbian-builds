@@ -46,6 +46,7 @@ on:
         description: 'Hardware platform'
         options:
         - orangepi5
+        - orangepi5b
         - orangepi5-plus
         - khadas-edge2
         - nanopi-r6s
