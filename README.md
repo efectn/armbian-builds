@@ -10,3 +10,4 @@ Custom Armbian builds for the following boards:
 - Bananapi M5 Pro/Armsom Sige 5
 - RPi3/4
 - Uefi x86
+- Radxa Orion O6

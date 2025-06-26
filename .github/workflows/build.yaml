@@ -55,6 +55,7 @@ on:
         - armsom-sige5
         - rpi4b
         - uefi-x86
+        - orion-o6
 
       armbian_ui:
         type: choice
